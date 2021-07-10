@@ -18,6 +18,7 @@ private 생성자나 열거타입으로 싱글턴임을 보장하라
 두 방식 모두 생성자는 `private`으로 감춰두고,            
 유일한 인스턴스에 접근할 수 있는 수단으로 `public static 멤버`를 하나 마련해둔다.          
 
+
 ## public static 멤버가 final 필드인 방식
 
 ```java
@@ -53,7 +54,42 @@ public class Elvis {
 * 마음이 바뀐다면 API를 바꾸지 않고도 싱글턴임이 아니게 변경할 수 있다.   
 * 정적 팩터리를 싱글턴 팩터리로 만들 수 있다.  
 * 정적 팩터리의 메서드 참조를 공급자로 사용할 수 있다.    
-  예 : `Elvis::getInstance`를 Supplier<Elvis>로 사용  
-*         
+  예 : `Elvis::getInstance`를 `Supplier<Elvis>`로 사용  
+
+## 원소가 하나인 열거타입으로 선언      
+```java
+public enum Elvis {
+    INSTANCE;
+    
+    public void leaveTheBuilding() { ... }
+}
+```
+
+더 간결하고, 추가 노력없이 직렬화할 수 있고        
+복잡한 직렬화 상황이나 리플렉션 공격에서도 제2의 인스턴스가 생기는 일을 막아준다.       
+   
+조금 부자연스러워 보일 수는 있으나       
+**대부분 상황에서는 원소가 하나뿐인 열거 타입이 싱글터늘 만드는 가장 좋은 방법이다.**        
+단, 만들려는 싱글턴이 Enum 외의 클래스를 상속해야 한다면 이 방법은 사용할 수 없다.       
+(열거 타입이 다른 인터페이스를 구현하도록은 할 수 있다.)     
+   
+# 직렬화 
+`정적 팩터리 메서드를 public static 멤버로 제공`과   
+`정적 팩터리 메서드를 public static 멤버로 제공` 방식으로 만든 싱글턴 클래스는    
+`Serializable` 을 구현한다고 선언하는 것만으로는 부족하다.      
+
+모든 인스턴스 필드를 `일시적(transien)`이라고 선언하고 `readResolve 메서드`를 제공해야한다.         
+사실 직렬화 자체는 문제 없는데 역직렬화시 새로운 인스턴스가 만들어지기 때문이다.   
+
+```java
+// 싱글턴임을 보장해주는 readResolve 메서드   
+private Object readResolve() {
+    // 진짜 Elvis를 반환하고, 가짜는 가비지 컬렉터에 맡긴다.    
+    return INSTACNE;
+}
+```
+          
+          
+        
 
 
