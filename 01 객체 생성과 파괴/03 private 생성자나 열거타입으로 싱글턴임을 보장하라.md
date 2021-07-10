@@ -13,7 +13,8 @@ private 생성자나 열거타입으로 싱글턴임을 보장하라
      
 1. public static 멤버가 final 필드인 방식  
 2. 정적 팩터리 메서드를 public static 멤버로 제공   
-       
+3. 원소가 하나인 열거타입으로 선언      
+     
 두 방식 모두 생성자는 `private`으로 감춰두고,            
 유일한 인스턴스에 접근할 수 있는 수단으로 `public static 멤버`를 하나 마련해둔다.          
 
@@ -31,6 +32,11 @@ public class Elvis {
 그러나 리플랙션인, `AccessibleObject.setAccessible` 을 사용해 `private 생성자`를 호출할 수 있다.          
 이러한 공격을 방어하려면 생성자를 두 번째 객체가 생성되려 할 때 예외를 던지게 하면 된다.     
 
+**장점**   
+* 해당 클래스가 싱글턴임을 API에 명백히 드러난다.   
+* `public static final`이니 절대로 객체를 참조할 수 없다.
+* 간결하다.    
+  
 ## 정적 팩터리 메서드를 public static 멤버로 제공
 ```java
 public class Elvis {
@@ -41,4 +47,13 @@ public class Elvis {
     public void leaveTheBuilding() { ... }
 }
 ```
+`Elvis.getInstance`는 항상 같은 객체의 참조를 반환하므로 다른 인스턴스는 만들어지지 않는다.    
+ 
+**장점**    
+* 마음이 바뀐다면 API를 바꾸지 않고도 싱글턴임이 아니게 변경할 수 있다.   
+* 정적 팩터리를 싱글턴 팩터리로 만들 수 있다.  
+* 정적 팩터리의 메서드 참조를 공급자로 사용할 수 있다.    
+  예 : `Elvis::getInstance`를 Supplier<Elvis>로 사용  
+*         
+
 
