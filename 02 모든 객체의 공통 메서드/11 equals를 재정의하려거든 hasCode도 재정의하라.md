@@ -1,2 +1,114 @@
 equals를 재정의하려거든 hasCode도 재정의하라
 ==============================================
+**equals를 재정의한 클래스 모두 hashCode도 재정의해야한다.**     
+그렇지 않으면 hashCode 일반 규약을 어기게 되어    
+해당 클래스의 인스턴스를 HashMap이나 HashSet 같은 컬렉션의 원소로 사용할 때 문제를 일으킬 것이다.    
+  
+**hashCode 규약**    
+* equals 비교에 사용되는 정보가 변경되지 않았다면,     
+  그 객체의 hashCode 메서드는 몇 번을 호출해도 일관 되게 항상 같은 값을 반환해야한다.     
+* equals(Object)가 두 객체를 같다고 판단했다면, 두 객체의 hashCode는 똑같은 값을 반환해야한다.    
+* equals(Object)가 두 객체를 다르다고 판단했더라도, 두 객체의 hashCode가 서로 다른 값을 반환할 필요는 없다.   
+  단, 다른 객체에 대해서는 다른 값을 반환해야 해시테이블의 성능이 좋아진다.(해시코드가 같지만 다른 객체도 가능)      
+  
+hashCode 재정의를 잘못했을 때 크게 문제가 되는 조항은 2번째이다.        
+**즉, 논리적으로 같은 객체는 같은 해시코드를 반환해야 한다.**         
+          
+`equals()`는 물리적으로 다른 두 객체를 논리적으로 같다고 표현해준다.                
+하지만, `Object`의 `hashCode()`는 기본적으로 객체의 주소값을 이용해서 해시코드를 만들어 반환한다.        
+그렇기 때문에 **`Hash 관련 컬렉션`에서는 둘이 전혀 다르다고 판단하여 규약과 달리 서로 다른 값으로 동작한다.**              
+
+```java
+Map<PhonerNumber, String> m = new HashMap<>();
+m.put(new PhoneNumber(707, 867, 5309), "제니"); 
+
+// 실패!
+assertThat(m.get(new PhoneNUmber(707, 867, 5309))).isEqualTo("제니"); 
+```  
+위 코드의 결과로 `"제니"`가 나올 것을 기대했지만 실상 `null`이 반환되었다.           
+앞서 언급했듯이 PhoneNumber 클래스의 hashCode를 재정의하지 않았기에 다른 개체로 인식했기 때문이다.         
+이러한 상황은 탐색할 버킷이 일치하더라도 hashCode가 다르기에 동치성 비교도 안하고 null을 반환하는 문제도 야기한다.      
+  
+**이를 해결하려면 어떻게 해야할까? 🤔**       
+`equals()`를 재정의하면서 `hashCode()`도 같이 재정의하면 된다.    
+그렇다면 `hashCode()`를 어떻게 재정의 할까?    
+
+## hashCode 재정의 방법  
+### 피해야할 방법 
+```java
+@Override public int hashCode() { return 42; }  
+``` 
+이 코드는 동치인 모든 객체에서 똑같은 해시코드를 반환하니 적법하다.          
+하지만 끔찍하게도 모든 객체에게 똑같은 값만 내어주므로           
+모든 객체가 해시테이블의 버킷 하나에 담겨 마치 연결 리스트 처럼 동작한다.      
+그 결과 재정의 하지 않았을 때의 수행 시간 `O(1)` 에서 `O(n)`으로 많이 느려졌다.      
+
+### 권장하는 방법 
+좋은 해시 함수라면 서로 다른 인스턴스에 다른 해시코드를 반환한다.(hashCode 3번째 규약)        
+이상적인 햇 ㅣ함수는 주어진 인스턴스들을 32비트 정수 범위에서 균일하게 분배해야 한다.      
+이상을 완벽히 실현하기는 어렵지만 비슷하게 만들기는 그다지 어렵지 않다.    
+   
+1. int 변수 result를 선언한 후 값 c로 초기화한다.   
+    이때 c는 해당 객체의 첫번째 `핵심 필드`를 단계 2.1 방식으로 계산한 해시코드다.    
+    여기서 핵심 필드란, equals 비교에 사용되는 필드를 말한다.        
+2. 해당 객체의 나머지 핵심 필드 f 각각에 대해 다음 작업을 수행한다.   
+    1. 해당 필드의 해시 코드 c를 계산한다.   
+        1. 기본 타입 필드라면, Type.hashCode(f)를 수행한다.     
+           여기서 Type은 해당 기본 타입의 박싱 클래스다     
+        2. 참조 타입 필드면서 이 클래스의 equals 메서드가 이 필드의 equals를 재귀적으로 호출해 비교한다면,     
+           이 플드의 hashCode를 재귀적으로 호출한다.     
+           계산이 더 복잡해질 것 같으면, 이 필드의 표준형을 만들어 그 표준형이 hashCode를 호출한다.      
+           필드의 값이 null이면 0을 사용한다.     
+        3. 필드가 배열이라면, 핵심 원소 각각을 별도 필드처럼 다룬다.    
+           이상의 규칙을 재귀적으로 적용해 각 핵심 원소의 해시코드를 계산한 다음, 단계 2.2 방식으로 갱신한다.     
+           배열에 핵심 원소가 하나도 없다면 단순히 상수를 사용한다.   
+           모든 원소가 핵심 원소라면 Arrays.hashCode를 사용한다.   
+    2. 단계 2.1에서 계산한 해시코드 c로 result를 갱신한다.    
+       `result = 31 * result + c;`
+3. result를 반환한다.   
+
+참고로, `equals()`에 사용되지 않은 필드는 반드시 제외해야 한다.   
+그렇지 않으면 hashCode 규약 2번째를 어기게 될 위험이 있다.   
+
+```java
+@Override public int hashCode() {
+    int result = Short.hashCode(areaCode);
+    result = 31 * result + Short.hashCode(prefix);
+    result = 31 * result + Short.hashCOde(lineNum);
+    return result;
+}
+```
+위와 같이 `equals()`에 사용한 필드들을 통해 `hashCode()`를 재정의해주면 된다.      
+단순하고 충분히 빠르고, 서로 다른 전화번호들은 다른 해시 버킷들로 제법 훌륭히 분배해준다.   
+단, 해시 충돌이 더 적은 방법을 꼭 써야 한다면 구아바의 `com.google.common.hash.Hashing`을 참고하자   
+
+`Objects 유틸 클래스`는 임의의 갯수만큼 객체를 받아 해시코드를 계산해주는 정적 메서드 `hash()`를 제공해준다.      
+이 메서드를 활용하면 앞서의 요령대로 구현한 코드와 비슷한 수준의 `hashCode()`를 단 한줄로 작성할 수 있다.         
+(입력 인수를 위한 배열을 만들고 박싱 언박싱도 진행하기에 조금 느리다.)     
+  
+```java
+@Override public int hashCode() {
+    return Objects.hash(lineNum, prefix, areaCode);
+}
+```
+더불어 클래스가 불변이고 해시코드를 계산하는 비용이 크다면,     
+매번 새로 계산하기 보다는 캐싱하는 방식을 고려해야 한다.       
+이 타입의 객체가 주로 `핵심 키`로 사용될 것 같다면 인스턴스가 만들어질 때 해시 코드를 계산해둬야 한다.   
+반대로 `핵심 키`로 사용되지 않을 경우 지연 초기화 전략을 고려해봐도 좋다.(단 스레드 레이스 컨디션을 주의하자)   
+
+```java
+private int hashCode;
+
+@Override public int hashCode() {
+    int result = hashCode;
+    if (result == 0) {
+        int result = Short.hashCode(areaCode);
+        result = 31 * result + Short.hashCode(prefix);
+        result = 31 * result + Short.hashCOde(lineNum);
+        return result;
+    }
+    return result;
+}
+```
+
+
