@@ -71,6 +71,27 @@ static void copy(String src, String dst) throws IOException {
         }
 }
 ```
+`try-with-resources`를 사용하면 가독성이 좋아지고 문제를 진단하기 훨씬 좋다.      
+더불어 catch 절을 쓰면 try문을 더 중첩하지 않고도 다수의 예외를 처리할 수 있다.     
+
+```java
+static String firstLineOfFile(String path, String defaultValue) {
+    try (BufferedReader br = new Bufferedreader(new FileReader(path))) {
+        return br.readLine();
+    } catch(IOException e) {
+        return defaultVlaue;
+    }
+}
+```   
+  
+**핵심 정리**   
+꼭 회수해야 하는 자원을 다룰 때는 `try-finally` 말고, `try-with-resources`를 사용하자   
+예외는 없다. 코드는 더 짧고 분명해지고, 만들어지는 예외 정보도 훨씬 유용하다.   
+`try-finally`로 작성하면 실용적이지 못할 만큼 코드가 지저분해지는 경우라도,   
+`try-with-resources`로는 정확하고 쉽게 자원을 회수 할 수 있다.      
+
+
+
 
 
 
