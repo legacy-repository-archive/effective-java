@@ -15,8 +15,9 @@ equals()는 일반 규약을 지켜 재정의하라
   메모리 주소값을 통해서만 값을 비교한다면 굳이 정의할 필요가 없다.       
      
 * **✔ 상위 클래스에서 정의한 `equals()`가 하위 클래스에도 딱 들어맞는다.**        
-  상속 받은 `equals()`를 그대로 이용하면 된다.      
-  클래스가 private 이거나 package-private이고 equals 메서드를 호출할 일이 없다.       
+  상속 받은 `equals()`를 그대로 이용하면 된다, 하위 클래스에서 문제를 일으키지 말라  
+  
+* **클래스가 private 이거나 package-private이고 equals 메서드를 호출할 일이 없다.**       
   혹여나 equals가 실수로라도 호출되는 걸 막고 싶다면 아래처럼 구현하자     
   ```java
       @Override public boolean equals(Object o) {
