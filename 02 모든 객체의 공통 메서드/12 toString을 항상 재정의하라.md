@@ -51,6 +51,7 @@ public String toString() { ... }
 toString을 재정의하면 시스템 디버깅을 쉽게해준다.    
 toString은 해당 객체에 관한 명확하고 유용한 정보를 반환해야한다.      
 
+양방향 toString 무한 참조 주의   
 
 
 
