@@ -28,3 +28,9 @@ public class Text {
 ```java
 text.applyStyles(EnumSet.of(Style.BOLD, Style.ITALIC));
 ```
+
+# 정리   
+열거할 수 있는 타입을 한데 모아 집합 형태로 사용한다고 해도 비트 필드를 사용할 이유는 없다.      
+EnumSet 클래스가 비트 필드 수준의 명료함과 성능을 제공하고 열거 타입의 장점까지 선사하기 때문이다.      
+EnumSet 의 유일한 단점이라면 불변 EnumSet을 만들 수 없다는 것이다.(Collections.unmodifiableSet으로 가능)    
+
